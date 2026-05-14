@@ -1,5 +1,5 @@
 <template>
-    <el-dialog title="新增文章" v-model="dialogVisible" width="50%" @close="handleClose">
+    <el-dialog :title="isEdit ? '编辑文章' : '新增文章'" v-model="dialogVisible" width="50%" @close="handleClose">
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="文章标题" prop="title">
           <el-input v-model="formData.title" placeholder="请输入文章标题" maxlength="100" show-word-limit></el-input>
@@ -55,14 +55,14 @@
       <template #footer>
            <el-button type="primary" @click="btnPreview = !btnPreview">{{ btnPreview ? '取消预览' : '预览' }}</el-button>
             <el-button type="primary" @click="handleClose">取消</el-button>
-            <el-button type="primary" @click="handleSubmit" :loading="loading">创建文章</el-button>
+            <el-button type="primary" @click="handleSubmit()" :loading="loading">{{ isEdit ? '更新' : '创建' }}文章</el-button>
       </template>
     </el-dialog>
 </template>
 <script setup>
-import { ref,computed,reactive,nextTick } from 'vue'
+import { ref,computed,reactive,nextTick,watch } from 'vue'
 import { ElDialog,ElMessage } from 'element-plus'
-import { uploadFile } from '@/api/admin'
+import { uploadFile,createArticle,updateArticle } from '@/api/admin'
 import { fileBaseUrl } from '@/config/index'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 
@@ -74,11 +74,25 @@ const props = defineProps({
   categories: {
     type: Array,
     default: () => []
+  },
+  article: {
+    type: Object,
+    default: null
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue','success'])
 
+//监听编辑数据
+watch(()=>props.article,(newVal)=>{
+     if(newVal){
+      nextTick(()=>{
+          Object.assign(formData,newVal)
+          businessId.value = newVal.id
+          imgUrl.value = fileBaseUrl + newVal.coverImage
+      })
+     }
+})
 const dialogVisible = computed({
   get(){
     return props.modelValue
@@ -88,8 +102,14 @@ const dialogVisible = computed({
   }
 })
 const handleClose = () => {
+  formRef.value.resetFields()
+  businessId.value = null
+  formData.tagArray = []
+  handleRemove()
   emit('update:modelValue', false)
 }
+
+const isEdit = computed(() => !!props.article?.id)
 
 const formRef = ref()
 
@@ -101,6 +121,7 @@ const formData =reactive({
     "categoryId": 1,
     "summary": "",
     "tags": "",
+    "tagArray": [],
     "id": ""
 })
 
@@ -111,6 +132,10 @@ const rules = reactive({
   ],
   categoryId: [
     { required: true, message: '请选择分类', trigger: 'change' }
+  ],
+  content: [
+    { required: true, message: '请输入文章内容', trigger: 'blur' },
+    { max: 5000, message: '文章内容最多5000个字符', trigger: 'blur' }
   ]
 })
 
@@ -135,13 +160,13 @@ const beforeUpload = (file) => {
   }
   return true
 }
-
+const businessId = ref(null)
 //上传请求
 const handleUploadRequest = async ({file}) => {
-   const businessId = crypto.randomUUID()
+   businessId.value = crypto.randomUUID()
 
    const fileRes = await uploadFile(file,{
-    businessId:businessId,
+    businessId:businessId.value,
   })
   imgUrl.value = fileBaseUrl + fileRes.filePath
   formData.coverImage = fileRes.filePath
@@ -169,9 +194,32 @@ const handleEditorCreated = (editor) => {
 const btnPreview = ref(false)
 
 //提交
+
 const loading = ref(false)
-const handleSubmit = async () => {
-  
+const handleSubmit = () => {
+   formRef.value.validate((valid,fields)=>{
+     if(valid){
+        loading.value = true
+     }
+     const submitData={
+       ...formData,
+       tags: formData.tagArray.join(',')
+     }
+     delete submitData.tagArray
+      
+     if(!isEdit.value){
+       submitData.id = businessId.value
+       createArticle(submitData).then(res=>{
+          loading.value = false
+          emit('success')
+        })
+     }else{
+        updateArticle(props.article.id,submitData).then(res=>{
+          loading.value = false
+          emit('success')
+        })
+     }    
+  }) 
 }
 </script>
 <style lang="scss" scoped>
