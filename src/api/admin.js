@@ -56,3 +56,11 @@ export function getSessionDetail(sessionId) {
 export function getEmotionalLogPage(params) {
   return service.get('/emotion-diary/admin/page', { params })
 }
+
+export function deleteEmotionalLog(id) {
+  return service.delete(`/emotion-diary/admin/${id}`)
+}
+
+export function getAnalyticsOverview() {
+  return service.get('/data-analytics/overview')
+}

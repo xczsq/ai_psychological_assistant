@@ -3,8 +3,6 @@
     :collapse="isCollapsed"
     :collapse-transition="false"
     default-active="2"
-    @open="handleOpen"
-    @close="handleClose"
     class="menu-style"
   >
     <div class="brand">
@@ -48,6 +46,7 @@ const iconMap = {
 const selectMenu = (item) => {
   router.push(`/back/${item.path}`)
 }
+
 </script>
 <style lang="scss" scoped>
 .menu-style {
