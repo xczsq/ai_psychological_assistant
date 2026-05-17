@@ -1,14 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import BackendLayout from '@/components/BackendLayout.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
+import FrontendLayout from '@/components/FrontendLayout.vue'
 
 const backendRoutes = [
   {
-    path: '/',
-    redirect: '/back'
-  },
-  {
     path: '/back',
+    redirect: '/back/dashboard',
     component: BackendLayout,
     children: [
       {
@@ -70,9 +68,49 @@ const backendRoutes = [
   }
 ]
 
+const frontendRoutes = [
+  {
+    path: '/',
+    component: FrontendLayout,
+    children: [
+
+    ]
+  }
+]
+
 const router = createRouter({
   history: createWebHistory(),
-  routes: backendRoutes,
+  routes: [...backendRoutes, ...frontendRoutes],
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || 'null')
+    if (userInfo && userInfo.userType === 2) {
+      if (to.path.startsWith('/back')) {
+        next()
+      } else {
+        next('/back/dashboard')
+      }
+    } else if (userInfo && userInfo.userType === 1) {
+      if (to.path.startsWith('/back')) {
+        next('/')
+      } else {
+        next()
+      }
+    } else {
+      localStorage.removeItem('token')
+      next('/auth/login')
+    }
+  } else {
+    if (to.path.startsWith('/back')) {
+      next('/auth/login')
+    } else {
+      next()
+    }
+  }
 })
 
 export default router
