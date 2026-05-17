@@ -73,7 +73,22 @@ const frontendRoutes = [
     path: '/',
     component: FrontendLayout,
     children: [
-
+      {
+        path: '',
+        component: () => import('@/views/home.vue'),
+      },
+      {
+        path: 'consulation',
+        component: () => import('@/views/consulation.vue'),
+      },
+      {
+        path: 'emotion-diary',
+        component: () => import('@/views/emotionDiary.vue'),
+      },
+      {
+        path: 'knowledge',
+        component: () => import('@/views/frontendKnowledge.vue'),
+      }
     ]
   }
 ]
@@ -95,7 +110,7 @@ router.beforeEach((to, from, next) => {
         next('/back/dashboard')
       }
     } else if (userInfo && userInfo.userType === 1) {
-      if (to.path.startsWith('/back')) {
+      if (to.path.startsWith('/back') || to.path.startsWith('/auth')) {
         next('/')
       } else {
         next()
