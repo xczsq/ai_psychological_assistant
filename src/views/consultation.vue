@@ -11,6 +11,45 @@
                          在线服务中
                     </div>
                 </div>
+                <div class="session-history">
+                       <h4 class="section-title">会话列表</h4>
+                       <div class="session-list">
+                           <div v-for="session in sessionList" :key="session.id" @click="handleSessionClick(session)" class="session-item">
+                               <div class="session-info">
+                                     <div class="session-title">
+                                          <span>{{session.sessionTitle}}</span>
+                                          <div class="session-meta">
+                                               <span class="session-time">{{session.startedAt}}</span>
+                                          </div>
+                                          <div class="session-preview">
+                                              {{ session.lastMessageContent }}
+                                          </div>
+                                          <div class="session-stats">
+                                               <span>
+                                                    <el-icon>
+                                                         <ChatRound />
+                                                    </el-icon>
+                                                    {{ session.messageCount || 0 }}
+                                               </span>
+                                               <span>
+                                                    <el-icon>
+                                                         <Clock />
+                                                    </el-icon>
+                                                    {{ session.durationMinutes || 0 }}分钟
+                                               </span>
+                                          </div>
+                                     </div>
+                                     <div class="session-actions">
+                                          <el-button text type="danger" size="mini" @click.stop="handleDeleteSession(session.id)">
+                                              <el-icon>
+                                                   <DeleteFilled />
+                                              </el-icon>
+                                          </el-button>
+                                     </div>
+                               </div>
+                           </div>
+                       </div>
+                </div>
           </div>
     <div class="chat-main">
          <div class="chat-header">
@@ -67,9 +106,9 @@
     </div>
 </template>
 <script setup>
-import { Plus, Promotion } from '@element-plus/icons-vue'
+import { Plus, Promotion,ChatRound,Clock,DeleteFilled } from '@element-plus/icons-vue'
 import { ref,onMounted } from 'vue'
-import { startSession } from '@/api/frontend'
+import { startSession,getSessionList,deleteSession } from '@/api/frontend'
 import {ElMessage} from 'element-plus'
 
 const iconUrl = new URL('@/assets/images/robot-fill.png', import.meta.url).href
@@ -88,6 +127,8 @@ const createNewFrontendSession = ()=>{
 
 //定义当前会话对象
 const currentSession = ref(null)
+const sessionList = ref([])
+
 
 //定义会话消息
 const messages = ref([])
@@ -148,13 +189,43 @@ const startNewSession = (message)=>{
             //如果是历史会话记录，直接更新数据
             currentSession.value = sessionData
         }
+        //更新会话列表
+        getSessionPage()
     }).catch(err=>{
         ElMessage.error('创建会话失败，请稍后重试')
         userMessage.value = message
     })
 }
 
+const getSessionPage = ()=>{
+    getSessionList({
+        currentPage:1,
+        size:10
+    }).then(res=>{
+        console.log(res)
+        sessionList.value = res.records
+    }).catch(err=>{
+        ElMessage.error('获取会话列表失败，请稍后重试')
+    })
+}
+
+//处理会话点击事件
+const handleSessionClick = (session)=>{
+    currentSession.value = session
+    //更新会话消息
+    messages.value = session.messages
+}
+
+const handleDeleteSession = (sessionId)=>{
+    deleteSession(sessionId).then(res=>{
+        ElMessage.success('会话删除成功')
+        //更新会话列表
+        getSessionPage()
+    })
+}
+
 onMounted(()=>{
+    getSessionPage()
     createNewFrontendSession()
 })
 
@@ -263,6 +334,9 @@ onMounted(()=>{
                     }
                     .session-info {
                         flex: 1;
+                         min-width: 0;
+                        overflow: hidden;
+                        padding-right: 36px;
                         .session-title {
                             font-weight: 500;
                             font-size: 14px;
@@ -279,6 +353,9 @@ onMounted(()=>{
                                 .session-time {
                                     font-size: 12px;
                                     color: #999;
+                                    white-space: nowrap;                                  
+                                    overflow: hidden;                                     
+                                    text-overflow: ellipsis; 
                                 }
                             }
                             .session-preview {
