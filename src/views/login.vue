@@ -70,7 +70,7 @@ const submitForm = async (formEl) => {
         if(data.userInfo.userType === 2){
             router.push('/back/dashboard')
         } else {
-            router.push('/')
+              router.push('/')
         }
        })
     } 

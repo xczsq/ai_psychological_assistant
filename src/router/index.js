@@ -27,8 +27,8 @@ const backendRoutes = [
         }
       },
       {
-        path: 'consulations',
-        component: () => import('@/views/consulations.vue'),
+        path: 'consultation',
+        component: () => import('@/views/consultations.vue'),
         meta: {
           title: '咨询记录',
           icon: 'Message'
@@ -78,8 +78,8 @@ const frontendRoutes = [
         component: () => import('@/views/home.vue'),
       },
       {
-        path: 'consulation',
-        component: () => import('@/views/consulation.vue'),
+        path: 'consultation',
+        component: () => import('@/views/consultation.vue'),
       },
       {
         path: 'emotion-diary',

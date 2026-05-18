@@ -31,11 +31,19 @@ service.interceptors.response.use(
     } else {
       if (data.code === '-1') {
         if (!config.url.includes('/login')) {
-          ElMessage.error(data.msg || '登录过期，请重新登录')
-
-          localStorage.removeItem('token')
-          localStorage.removeItem('userInfo')
-          window.location.href = '/auth/login'
+          const msg = data.msg || data.message || ''
+          const isAuthError = /登录|token|认证|过期|未登录|Token/i.test(msg)
+          if (isAuthError) {
+            ElMessage.error(msg || '登录过期，请重新登录')
+            localStorage.removeItem('token')
+            localStorage.removeItem('userInfo')
+            import('@/router').then(mod => {
+              mod.default.push('/auth/login')
+            })
+          } else {
+            ElMessage.error(msg || '请求失败')
+            return Promise.reject(msg || '请求失败')
+          }
         } else {
           ElMessage.error(data.msg || '登录失败')
           return Promise.reject(data.msg || '登录失败')
