@@ -82,6 +82,30 @@
                       </div>
                   </div>
              </div>
+             <div v-for="msg in messages" :key="msg.id" class="message-item" :class="msg.senderType===1? 'user-message':'ai-message'">
+                  <div class="message-avatar">
+                      <el-image v-if="msg.senderType ===1" :src="iconUrl2" style="width: 18px; height: 18px;" />
+                      <el-image v-else :src="iconUrl" style="width: 18px; height: 18px;" />
+                  </div>
+                  <div class="message-content">
+                       <div class="message-bubble">
+                           <!-- ai正在思考 -->
+                           <div v-if="msg.senderType === 2 && isAiTyping && !msg.content" class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                           </div>
+                           <!-- ai错误提示 -->
+                            <div v-else-if="msg.isError" class="error-message">
+                                <p>AI: {{ msg.content }}</p>
+                            </div>
+                            <!-- ai正常回复 -->
+                            <MarkdownRenderer v-else-if="msg.senderType===2 && !msg.isError" :content="msg.content" :is-ai-message="true" />
+                            <p v-else-if="msg.content" v-html="formatMessageContent(msg.content)"></p>
+                       </div>
+                       <div class="message-time">{{ msg.senderType=== 2 && isAiTyping ? '正在输入...' : msg.createdAt }}</div>
+                  </div>
+             </div>
          </div>
          <div class="chat-input">
              <div class="input-container">
@@ -108,12 +132,13 @@
 <script setup>
 import { Plus, Promotion,ChatRound,Clock,DeleteFilled } from '@element-plus/icons-vue'
 import { ref,onMounted } from 'vue'
-import { startSession,getSessionList,deleteSession } from '@/api/frontend'
+import { startSession,getSessionList,deleteSession,getSessionDetail } from '@/api/frontend'
 import {ElMessage} from 'element-plus'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 const iconUrl = new URL('@/assets/images/robot-fill.png', import.meta.url).href
 const iconUrl1 = new URL('@/assets/images/like.png', import.meta.url).href
-
+const iconUrl2 = new URL('@/assets/images/users.png', import.meta.url).href
 
 //新建会话
 const createNewFrontendSession = ()=>{
@@ -136,6 +161,8 @@ const messages = ref([])
 const userMessage = ref('')
 //定义AI是否正在输入
 const isAiTyping = ref(false)
+
+
 //定义处理键盘事件
 const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -211,9 +238,9 @@ const getSessionPage = ()=>{
 
 //处理会话点击事件
 const handleSessionClick = (session)=>{
-    currentSession.value = session
-    //更新会话消息
-    messages.value = session.messages
+     getSessionDetail(session.id).then(res=>{
+        messages.value = res
+     })
 }
 
 const handleDeleteSession = (sessionId)=>{
@@ -222,6 +249,10 @@ const handleDeleteSession = (sessionId)=>{
         //更新会话列表
         getSessionPage()
     })
+}
+
+const formatMessageContent = (content)=>{
+    return content.replace(/\n/g, '<br>')
 }
 
 onMounted(()=>{
