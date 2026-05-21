@@ -43,6 +43,24 @@
                                      <div class="suggestion-text">{{ currentEmotion.suggestion }}</div>
                                 </div>
                            </div>
+                           <!-- 治愈行动卡片 -->
+                            <div class="healing-actions" v-if="currentEmotion.improvementSuggestions.length>0">
+                                 <div class="actions-title">治愈小行动</div>
+                                 <div class="actions-list">
+                                     <div v-for="action in currentEmotion.improvementSuggestions" :key="action" class="action-item">
+                                          <div class="action-icon">✨</div>
+                                          <div class="action-text">{{action}}</div>
+                                     </div>
+                                 </div>
+                            </div>
+                            <!-- 风险提示卡片 -->
+                             <div class="risk-notice" v-if="currentEmotion.isNegative && currentEmotion.riskLevel>1">
+                                 <div class="action-icon">🤗</div>
+                                 <div class="notice-content">
+                                     <div class="notice-title">风险提示</div>
+                                     <div class="notice-text">{{currentEmotion.riskDescription}}</div>
+                                 </div>
+                             </div>
                      </div>
                  </div>
                 <div class="session-history">
@@ -170,7 +188,7 @@
 <script setup>
 import { Plus, Promotion,ChatRound,Clock,DeleteFilled } from '@element-plus/icons-vue'
 import { ref,onMounted } from 'vue'
-import { startSession,getSessionList,deleteSession,getSessionDetail } from '@/api/frontend'
+import { startSession,getSessionList,deleteSession,getSessionDetail,getSessionEmotion } from '@/api/frontend'
 import {ElMessage} from 'element-plus'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
@@ -208,8 +226,18 @@ const currentEmotion = ref({
     emotionScore:50,
     isNegative:false,
     riskLevel:0,
-    suggestion:'情绪状态平稳'
+    suggestion:'情绪状态平稳',
+    improvementSuggestions:[]
 })
+
+const loadSessionEmotion = (sessionId)=>{
+
+    const id = sessionId.toString().startsWith('session_')?sessionId : `session_${sessionId}`
+
+    getSessionEmotion(id).then(res=>{
+        currentEmotion.value = res
+    })
+}
 
 const getIntensityClass = (score)=>{
     if(score>=61){
@@ -355,6 +383,8 @@ const startAIResponse = (sessionId,userMessage)=>{
 
             if(eventName==='done'){
                 isAiTyping.value = false
+                ctrl.abort()
+                loadSessionEmotion(currentSession.value.sessionId)
                 return
             }
             try {
@@ -380,6 +410,7 @@ const startAIResponse = (sessionId,userMessage)=>{
         },
         onClose:()=>{
             isAiTyping.value = false
+            loadSessionEmotion(currentSession.value.sessionId)
         }
      })
 }
@@ -411,6 +442,7 @@ const handleSessionClick = (session)=>{
      getSessionDetail(session.id).then(res=>{
         messages.value = res
      })
+     loadSessionEmotion(session.id)
      //更新当前会话
      const sessionData = {
         sessionId:"session_" + session.id,

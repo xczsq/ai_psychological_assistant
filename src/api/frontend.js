@@ -19,3 +19,15 @@ export const deleteSession = (sessionId) => {
 export const getSessionDetail = (sessionId) => {
   return service.get(`/psychological-chat/sessions/${sessionId}/messages`)
 }
+
+export const getSessionEmotion = (sessionId) => {
+  return service.get(`/psychological-chat/session/${sessionId}/emotion`)
+}
+
+export const addEmotionDiary = (data) => {
+  return service.post('/emotion-diary', data)
+}
+
+export const getKnowledgeList = (params) => {
+  return service.get('/knowledge/article/page', { params })
+}
